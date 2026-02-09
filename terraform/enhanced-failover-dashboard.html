@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infrastructure Guard | FAILOVER ACTIVE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --bg-primary: #0f0a0a;
+            --bg-secondary: #1a1111;
+            --border-primary: #2d1f1f;
+            --accent-amber: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-emerald: #10b981;
+            --glow-amber: rgba(245, 158, 11, 0.4);
+            --glow-red: rgba(239, 68, 68, 0.3);
+        }
+        
+        html {
+            background: #0f0a0a;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body { 
+            background: linear-gradient(135deg, #0f0a0a 0%, #2e1a0a 100%);
+            font-family: 'Inter', sans-serif; 
+            color: #e5e7eb;
+            overflow-x: hidden;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .mono { 
+            font-family: 'JetBrains Mono', monospace; 
+        }
+        
+        /* Animated gradient background - Amber theme */
+        .animated-bg {
+            background: linear-gradient(135deg, #0f0a0a 0%, #2e1a0a 50%, #0f0a0a 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Enhanced grid background - Amber tint */
+        .grid-bg { 
+            background-image: 
+                linear-gradient(rgba(245, 158, 11, 0.04) 1px, transparent 1px), 
+                linear-gradient(90deg, rgba(245, 158, 11, 0.04) 1px, transparent 1px);
+            background-size: 50px 50px;
+            position: relative;
+        }
+        
+        .grid-bg::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        
+        /* Glass morphism panel - Amber variant */
+        .terminal-panel { 
+            background: rgba(26, 17, 17, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.5),
+                inset 0 1px 0 rgba(245, 158, 11, 0.05);
+        }
+        
+        /* Enhanced scanline with amber gradient */
+        .scanline { 
+            width: 100%; 
+            height: 3px; 
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(245, 158, 11, 0.5) 50%, 
+                transparent 100%);
+            position: absolute; 
+            animation: scan 6s ease-in-out infinite; 
+            z-index: 10; 
+            pointer-events: none;
+            filter: blur(1px);
+        }
+        
+        @keyframes scan { 
+            0%, 100% { top: 0; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+
+        /* Pulse glow effects - Amber theme */
+        @keyframes pulse-glow-amber {
+            0%, 100% { 
+                box-shadow: 0 0 5px var(--glow-amber),
+                           0 0 10px var(--glow-amber),
+                           0 0 20px var(--glow-amber);
+            }
+            50% { 
+                box-shadow: 0 0 10px var(--glow-amber),
+                           0 0 20px var(--glow-amber),
+                           0 0 40px var(--glow-amber);
+            }
+        }
+        
+        @keyframes pulse-glow-red {
+            0%, 100% { 
+                box-shadow: 0 0 5px var(--glow-red),
+                           0 0 10px var(--glow-red);
+            }
+            50% { 
+                box-shadow: 0 0 10px var(--glow-red),
+                           0 0 20px var(--glow-red);
+            }
+        }
+        
+        .status-dot-active { 
+            animation: pulse-glow-amber 2s infinite;
+            filter: brightness(1.5);
+        }
+        
+        .status-dot-offline {
+            animation: pulse-glow-red 2s infinite;
+        }
+        
+        /* Node cards with hover effects */
+        .node-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .node-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(245, 158, 11, 0.1) 50%, 
+                transparent 100%);
+            transition: left 0.5s;
+        }
+        
+        .node-card:hover::before {
+            left: 100%;
+        }
+        
+        .node-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Failover node special effects */
+        .node-failover {
+            background: linear-gradient(135deg, 
+                rgba(245, 158, 11, 0.12) 0%, 
+                rgba(245, 158, 11, 0.03) 100%);
+            border-color: rgba(245, 158, 11, 0.5) !important;
+            animation: pulse-border-amber 3s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-border-amber {
+            0%, 100% { 
+                border-color: rgba(245, 158, 11, 0.5);
+                box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+            }
+            50% { 
+                border-color: rgba(245, 158, 11, 0.8);
+                box-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
+            }
+        }
+        
+        /* Offline node */
+        .node-offline {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: rgba(239, 68, 68, 0.3) !important;
+            opacity: 0.4;
+            filter: grayscale(1);
+        }
+        
+        /* Progress bars with amber gradient */
+        .progress-bar {
+            height: 4px;
+            background: linear-gradient(90deg, 
+                var(--accent-amber) 0%, 
+                #fbbf24 100%);
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                transparent 0%, 
+                rgba(255, 255, 255, 0.4) 50%, 
+                transparent 100%);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* Custom Scrollbar - Amber theme */
+        #log-container::-webkit-scrollbar { 
+            width: 6px; 
+        }
+        
+        #log-container::-webkit-scrollbar-track { 
+            background: rgba(45, 31, 31, 0.3);
+            border-radius: 10px;
+        }
+        
+        #log-container::-webkit-scrollbar-thumb { 
+            background: linear-gradient(180deg, var(--accent-amber) 0%, #d97706 100%);
+            border-radius: 10px;
+        }
+        
+        #log-container::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-amber);
+        }
+        
+        /* Log entries with fade-in */
+        .log-entry {
+            animation: fadeInSlide 0.3s ease-out;
+            opacity: 0;
+            animation-fill-mode: forwards;
+        }
+        
+        @keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Enhanced button styles - Amber theme */
+        .btn-glass {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-glass::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(245, 158, 11, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.5s, height 0.5s;
+        }
+        
+        .btn-glass:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-glass:hover {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: rgba(245, 158, 11, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(245, 158, 11, 0.2);
+        }
+        
+        /* Metric cards */
+        .metric-card {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            background: rgba(0, 0, 0, 0.6);
+            border-color: rgba(245, 158, 11, 0.4);
+            transform: translateY(-2px);
+        }
+        
+        /* Status badge with pulse */
+        .status-badge {
+            animation: pulse-opacity 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-opacity {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        /* Alert banner animation */
+        .alert-banner {
+            animation: alert-pulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes alert-pulse {
+            0%, 100% { background-color: rgba(245, 158, 11, 0.05); }
+            50% { background-color: rgba(245, 158, 11, 0.1); }
+        }
+        
+        /* Glowing text effect */
+        .glow-text {
+            text-shadow: 0 0 10px currentColor,
+                        0 0 20px currentColor,
+                        0 0 30px currentColor;
+        }
+        
+        /* Warning badge */
+        .warning-badge {
+            animation: warning-blink 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes warning-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .terminal-panel {
+                margin: 1rem;
+            }
+            
+            .scanline {
+                display: none;
+            }
+        }
+        
+        /* Fade out transition for mode switching */
+        .fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="grid-bg animated-bg min-h-screen flex items-center justify-center p-4">
+    <div class="relative w-full max-w-5xl terminal-panel rounded-2xl overflow-hidden">
+        <div class="scanline"></div>
+        
+        <!-- Header -->
+        <div class="border-b border-amber-900/30 bg-black/40 p-5 flex justify-between items-center backdrop-blur-sm">
+            <div class="flex items-center gap-4">
+                <div id="status-indicator-dot" class="w-3 h-3 bg-amber-500 rounded-sm rotate-45 status-dot-active"></div>
+                <div class="flex flex-col">
+                    <span class="mono text-xs font-bold text-amber-500 uppercase tracking-wider">System_Identifier: FAILOVER-MODE-V2</span>
+                    <span class="mono text-[9px] text-amber-700/60 uppercase tracking-widest">Secondary Origin Active</span>
+                </div>
+                <div class="warning-badge mono text-[10px] bg-amber-600/20 text-amber-400 border border-amber-600/40 px-3 py-1 rounded-lg ml-3">
+                    <span class="inline-block w-1.5 h-1.5 bg-amber-500 rounded-full mr-2"></span>
+                    FAILOVER ACTIVE
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <div class="w-3 h-3 rounded-full bg-red-500 shadow-lg shadow-red-500/50 status-dot-offline"></div>
+                <div class="w-3 h-3 rounded-full bg-amber-500 shadow-lg shadow-amber-500/50 animate-pulse"></div>
+                <div class="w-3 h-3 rounded-full bg-gray-700"></div>
+            </div>
+        </div>
+
+        <div class="p-8 md:p-12">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Content -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Title Section -->
+                    <div class="space-y-3">
+                        <h1 class="text-5xl font-bold text-white tracking-tight">
+                            Multi-Region 
+                            <span class="bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent glow-text">
+                                Resilience
+                            </span>
+                        </h1>
+                        <p class="mono text-[11px] text-amber-500/70 uppercase tracking-[0.3em] flex items-center gap-2">
+                            <span class="inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                            AWS CloudFront Secondary Origin Active
+                        </p>
+                    </div>
+
+                    <!-- Node Status Cards -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <!-- Primary Node - OFFLINE -->
+                        <div class="node-card node-offline border p-6 rounded-xl relative">
+                            <div class="absolute top-3 right-3">
+                                <span class="mono text-[9px] text-red-500 font-bold bg-red-500/10 px-2 py-1 rounded-md border border-red-500/30">
+                                    OFFLINE
+                                </span>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="mono text-[11px] text-gray-600 mb-1 tracking-wide">NODE_01</p>
+                                    <p class="text-gray-500 font-bold text-2xl uppercase tracking-tight">US-EAST-1</p>
+                                    <p class="text-red-500 text-sm font-semibold mt-1">Unavailable</p>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-[10px] mono text-gray-600">
+                                        <span>Health</span>
+                                        <span class="text-red-500 font-bold">0%</span>
+                                    </div>
+                                    <div class="flex gap-1.5">
+                                        <div class="h-1 flex-1 bg-gray-800 rounded"></div>
+                                        <div class="h-1 flex-1 bg-gray-800 rounded"></div>
+                                        <div class="h-1 flex-1 bg-gray-800 rounded"></div>
+                                        <div class="h-1 flex-1 bg-gray-800 rounded"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 text-[10px] mono">
+                                    <div class="w-2 h-2 bg-red-500 rounded-full shadow-lg shadow-red-500/50"></div>
+                                    <span class="text-gray-600">Primary Origin Failed</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Secondary Node - FAILOVER ACTIVE -->
+                        <div class="node-card node-failover border p-6 rounded-xl relative">
+                            <div class="absolute top-3 right-3">
+                                <span class="mono text-[9px] text-amber-500 font-bold bg-amber-500/15 px-2 py-1 rounded-md border border-amber-500/40 warning-badge">
+                                    FAILOVER
+                                </span>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <p class="mono text-[11px] text-amber-500/70 mb-1 tracking-wide">NODE_02</p>
+                                    <p class="text-white font-bold text-2xl uppercase tracking-tight">US-WEST-2</p>
+                                    <p class="text-amber-500 text-sm font-semibold mt-1">Active Traffic</p>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-[10px] mono text-gray-400">
+                                        <span>Health</span>
+                                        <span class="text-amber-500 font-bold">100%</span>
+                                    </div>
+                                    <div class="flex gap-1.5">
+                                        <div class="progress-bar flex-1"></div>
+                                        <div class="progress-bar flex-1"></div>
+                                        <div class="progress-bar flex-1"></div>
+                                        <div class="progress-bar flex-1"></div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-2 text-[10px] mono">
+                                    <div class="w-2 h-2 bg-amber-500 rounded-full shadow-lg shadow-amber-500/50 animate-pulse"></div>
+                                    <span class="text-gray-300">Secondary Origin Serving</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alert Banner -->
+                    <div class="alert-banner border-l-4 border-amber-500 bg-amber-500/5 pl-6 py-4 rounded-r-lg backdrop-blur-sm">
+                        <div class="flex items-start gap-3">
+                            <div class="text-amber-500 text-xl mt-0.5">⚠</div>
+                            <div>
+                                <p class="text-sm font-semibold text-amber-500 mb-1">Automatic Failover Triggered</p>
+                                <p class="text-sm leading-relaxed text-amber-200/70">
+                                    Primary origin in US-EAST-1 is inaccessible. CloudFront has automatically routed all traffic to the 
+                                    <span class="text-white font-bold px-2 py-0.5 bg-amber-500/20 rounded mono text-xs">Secondary Origin</span>
+                                    in Oregon (US-WEST-2). Service continuity maintained.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- System Logs -->
+                    <div class="mt-8 border-t border-gray-800/50 pt-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <p class="mono text-[10px] text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                <span class="inline-block w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+                                Failover_Event_Logs
+                            </p>
+                            <button onclick="clearLogs()" class="mono text-[9px] text-gray-600 hover:text-gray-400 transition-colors">
+                                [ CLEAR ]
+                            </button>
+                        </div>
+                        <div id="log-container" class="metric-card rounded-lg p-5 h-40 overflow-y-auto mono text-[11px] space-y-2 font-medium">
+                            <div class="log-entry">
+                                <span class="text-amber-500">[FAILOVER]</span> 
+                                <span class="text-gray-400">Initializing failover sequence...</span>
+                            </div>
+                            <div class="log-entry" style="animation-delay: 0.1s;">
+                                <span class="text-red-500">[ERROR]</span> 
+                                <span class="text-gray-400">404 error intercepted at Edge location</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="space-y-6">
+                    <!-- Environment Data -->
+                    <div class="metric-card rounded-xl p-6">
+                        <p class="mono text-[10px] text-gray-500 uppercase mb-4 tracking-widest border-b border-gray-800 pb-2">
+                            Environment_Metrics
+                        </p>
+                        <ul class="mono text-[11px] space-y-3">
+                            <li class="flex justify-between items-center py-2 border-b border-gray-900/50">
+                                <span class="text-gray-400">Region</span> 
+                                <span class="text-white font-bold">US-WEST-2</span>
+                            </li>
+                            <li class="flex justify-between items-center py-2 border-b border-gray-900/50">
+                                <span class="text-gray-400">Origin</span> 
+                                <span class="text-amber-500 font-bold uppercase flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 bg-amber-500 rounded-full shadow-lg shadow-amber-500/50 animate-pulse"></span>
+                                    Secondary
+                                </span>
+                            </li>
+                            <li class="flex justify-between items-center py-2 border-b border-gray-900/50">
+                                <span class="text-gray-400">Latency</span> 
+                                <span id="latency-val" class="text-amber-400 font-bold">--ms</span>
+                            </li>
+                            <li class="flex justify-between items-center py-2">
+                                <span class="text-gray-400">Failover Time</span> 
+                                <span id="failover-time" class="text-white font-bold">00:00:00</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Status Card -->
+                    <div class="status-badge p-5 bg-gradient-to-br from-amber-600/15 to-amber-600/5 border border-amber-600/40 rounded-xl">
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 bg-amber-500 rounded-full shadow-lg shadow-amber-500/50 animate-pulse"></div>
+                                <span class="mono text-[11px] text-amber-400 font-bold uppercase tracking-wide">
+                                    Failover Status
+                                </span>
+                            </div>
+                            <div class="space-y-2 mono text-[10px]">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Mode</span>
+                                    <span class="text-amber-500 font-bold">ACTIVE</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Origin Group</span>
+                                    <span class="text-white font-bold">REROUTED</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Traffic</span>
+                                    <span id="traffic-count" class="text-white font-bold">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recovery Actions -->
+                    <div class="metric-card rounded-xl p-5">
+                        <p class="mono text-[10px] text-gray-500 uppercase mb-3 tracking-widest">
+                            Recovery_Actions
+                        </p>
+                        <div class="space-y-2">
+                            <button onclick="checkPrimaryHealth()" class="w-full btn-glass mono text-[10px] text-amber-400 px-3 py-2 rounded-lg text-left relative overflow-hidden">
+                                <span class="relative z-10">🔍 Check Primary Health</span>
+                            </button>
+                            <button onclick="initiateRecovery()" class="w-full btn-glass mono text-[10px] text-emerald-400 px-3 py-2 rounded-lg text-left relative overflow-hidden">
+                                <span class="relative z-10">↻ Initiate Recovery → Return to Normal Mode</span>
+                            </button>
+                            <button onclick="refreshMetrics()" class="w-full btn-glass mono text-[10px] text-blue-400 px-3 py-2 rounded-lg text-left relative overflow-hidden">
+                                <span class="relative z-10">📊 Refresh Metrics</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Warning Notice -->
+                    <div class="p-4 bg-red-600/5 border border-red-600/20 rounded-xl">
+                        <div class="flex items-start gap-2">
+                            <div class="text-red-500 text-sm mt-0.5">⚠</div>
+                            <div>
+                                <p class="mono text-[9px] text-red-400 font-bold mb-1 uppercase">Primary Offline</p>
+                                <p class="text-[10px] text-gray-400 leading-relaxed">
+                                    Monitoring primary origin for recovery. Auto-failback will trigger when health is restored.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // CONFIGURATION
+        let trafficCounter = 0;
+        let failoverSeconds = 0;
+
+        // LATENCY CALCULATOR
+        window.onload = function() {
+            const loadTime = window.performance.timing.domContentLoadedEventEnd - window.performance.timing.navigationStart;
+            // Add slight delay to simulate cross-region latency
+            const adjustedLatency = loadTime + Math.floor(Math.random() * 30) + 20;
+            document.getElementById('latency-val').innerText = adjustedLatency + "ms";
+            
+            // Simulate traffic counter
+            setInterval(() => {
+                trafficCounter += Math.floor(Math.random() * 8) + 2;
+                document.getElementById('traffic-count').innerText = trafficCounter;
+            }, 3000);
+            
+            // Failover time counter
+            setInterval(() => {
+                failoverSeconds++;
+                const hours = Math.floor(failoverSeconds / 3600).toString().padStart(2, '0');
+                const minutes = Math.floor((failoverSeconds % 3600) / 60).toString().padStart(2, '0');
+                const seconds = (failoverSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('failover-time').innerText = `${hours}:${minutes}:${seconds}`;
+            }, 1000);
+        };
+
+        // ENHANCED LOG GENERATOR
+        const systemLogs = [
+            { type: 'FAILOVER', message: 'Syncing regional state...', color: 'amber' },
+            { type: 'HEALTH', message: 'Checking secondary origin health... OK', color: 'emerald' },
+            { type: 'CDN', message: 'CloudFront Edge cache verified', color: 'blue' },
+            { type: 'ROUTE', message: 'Redirecting traffic to US-WEST-2', color: 'amber' },
+            { type: 'SECURITY', message: 'Security handshake complete', color: 'blue' },
+            { type: 'MONITOR', message: 'Analyzing traffic patterns...', color: 'blue' },
+            { type: 'STATUS', message: 'Failover persistence active', color: 'amber' },
+            { type: 'CACHE', message: 'Edge cache warming in progress', color: 'blue' },
+            { type: 'HEALTH', message: 'Primary health check: FAILED', color: 'red' },
+            { type: 'METRIC', message: 'Response time: 65ms (acceptable)', color: 'amber' }
+        ];
+
+        function addLog() {
+            const container = document.getElementById('log-container');
+            const time = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const log = systemLogs[Math.floor(Math.random() * systemLogs.length)];
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="text-${log.color}-500">[${log.type}]</span> 
+                <span class="text-gray-400">${log.message}</span>
+                <span class="text-gray-600 float-right">${time}</span>
+            `;
+            
+            container.appendChild(logEntry);
+            container.scrollTop = container.scrollHeight;
+            
+            if (container.children.length > 20) {
+                container.removeChild(container.children[0]);
+            }
+        }
+        
+        setInterval(addLog, 4000);
+
+        function clearLogs() {
+            document.getElementById('log-container').innerHTML = '';
+        }
+
+        // CHECK PRIMARY HEALTH
+        function checkPrimaryHealth() {
+            const container = document.getElementById('log-container');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="text-amber-500">[HEALTH]</span> 
+                <span class="text-gray-400">Initiating primary origin health check...</span>
+            `;
+            container.appendChild(logEntry);
+            
+            setTimeout(() => {
+                const logEntry2 = document.createElement('div');
+                logEntry2.className = 'log-entry';
+                logEntry2.innerHTML = `
+                    <span class="text-red-500">[RESULT]</span> 
+                    <span class="text-gray-400">Primary origin still unavailable (404)</span>
+                `;
+                container.appendChild(logEntry2);
+                container.scrollTop = container.scrollHeight;
+            }, 2000);
+        }
+
+        // CONFIGURATION - UPDATE THESE URLS!
+        const PRIMARY_DASHBOARD_URL = 'http://global-shield-primary-cybern3m3.s3-website-us-east-1.amazonaws.com/index.html'; // Change to full S3 URL when deploying
+        
+        // INITIATE RECOVERY - Redirects to primary dashboard
+        function initiateRecovery() {
+            const container = document.getElementById('log-container');
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="text-emerald-500">[RECOVERY]</span> 
+                <span class="text-gray-400">Attempting primary origin recovery...</span>
+            `;
+            container.appendChild(logEntry);
+            container.scrollTop = container.scrollHeight;
+            
+            setTimeout(() => {
+                const logEntry2 = document.createElement('div');
+                logEntry2.className = 'log-entry';
+                logEntry2.innerHTML = `
+                    <span class="text-emerald-500">[SUCCESS]</span> 
+                    <span class="text-gray-400">Primary origin health restored!</span>
+                `;
+                container.appendChild(logEntry2);
+                container.scrollTop = container.scrollHeight;
+                
+                // Add fade-out effect
+                setTimeout(() => {
+                    document.body.classList.add('fade-out');
+                    
+                    // Redirect after fade completes
+                    setTimeout(() => {
+                        window.location.href = PRIMARY_DASHBOARD_URL;
+                    }, 500);
+                }, 1000);
+            }, 1500);
+        }
+
+        // REFRESH METRICS
+        function refreshMetrics() {
+            const latencyElement = document.getElementById('latency-val');
+            latencyElement.textContent = '...';
+            
+            setTimeout(() => {
+                const newLatency = Math.floor(Math.random() * 40) + 45;
+                latencyElement.textContent = newLatency + 'ms';
+                
+                const container = document.getElementById('log-container');
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                logEntry.innerHTML = `
+                    <span class="text-blue-500">[METRIC]</span> 
+                    <span class="text-gray-400">Metrics refreshed successfully</span>
+                `;
+                container.appendChild(logEntry);
+                container.scrollTop = container.scrollHeight;
+            }, 500);
+        }
+
+        // ESC key to clear logs
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'c' && e.ctrlKey) {
+                clearLogs();
+            }
+        });
+    </script>
+</body>
+</html>
+
