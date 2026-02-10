@@ -7,7 +7,7 @@ A high-availability, multi-region cloud architecture featuring automated failove
 
 An interactive demonstration of multi-region disaster recovery using AWS services. Features automatic failover between US-EAST-1 and US-WEST-2, with real-time monitoring dashboards that visualize system health and failover states.
 
-**[🚀 Try the Live Demo](https://dfytbf2qb827t.cloudfront.net)**
+**[🚀 Try the Live Demo](https://d3ko3s70so24u1.cloudfront.net/)**
 
 ### Key Features
 
@@ -127,3 +127,4 @@ aws s3 cp enhanced-failover-dashboard.html s3://global-shield-secondary-[id]/ind
 * MEDIUM: [securecloudlab]
 
 ---
+
