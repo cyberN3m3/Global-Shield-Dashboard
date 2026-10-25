@@ -1,6 +1,6 @@
 # 🛡️ Global Shield: Multi-Region Infrastructure Guard
 
-A high-availability, multi-region cloud architecture featuring automated failover and a real-time monitoring dashboard. This project demonstrates enterprise-grade resilience using AWS S3, CloudFront, and Route 53.
+A high-availability, multi-region cloud architecture featuring automated failover and a real-time monitoring dashboard. It shows how to keep a site available through a regional outage using AWS S3, CloudFront origin groups and Route 53 health checks, all defined in Terraform.
 
 ## 🚀 Overview
 
@@ -13,9 +13,9 @@ An interactive demonstration of multi-region disaster recovery using AWS service
 
 * **Active-Passive Failover:** Automated traffic shifting via CloudFront Origin Groups.
 * **Multi-Region Resilience:** Redundant hosting across US East and US West.
-* **Real-Time Dashboard:** A professional "Dark Mode" monitoring interface with simulated "Incident" and "Recovery" modes.
+* **Monitoring dashboard:** a dark-mode interface with simulated "Incident" and "Recovery" modes for demonstrations (the failover itself is real CloudFront behaviour).
 * **Infrastructure as Code:** Entire stack deployed via Terraform for 1-click reproducibility.
-* **Latency Monitoring:** Integrated health checks to ensure the fastest response times for users.
+* **Health checks:** a Route 53 health check watches the primary endpoint.
 
 ---
 
@@ -41,10 +41,14 @@ The infrastructure consists of the following components:
 
 ## 📂 Project Structure
 
-├── main.tf                 # Main infrastructure logic (S3, CloudFront, OAC)
-├── providers.tf            # AWS Provider aliases for East/West regions
-├── enhanced-dashboard.html # Primary Region (Blue) UI
-├── enhanced-failover.html  # Secondary Region (Amber) UI
+```
+terraform/
+├── main.tf                          # S3 website buckets, CloudFront origin group, Route 53 health check, uploads
+├── providers.tf                     # AWS provider aliases for us-east-1 and us-west-2
+├── variables.tf
+├── enhanced-dashboard.html          # Primary region (blue) UI
+└── enhanced-failover-dashboard.html # Secondary region (amber) UI
+```
 
 ---
 
@@ -59,8 +63,8 @@ The infrastructure consists of the following components:
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/cybern3m3/global-shield.git
-cd global-shield
+git clone https://github.com/cyberN3m3/Global-Shield-Dashboard.git
+cd Global-Shield-Dashboard/terraform
 
 ```
 
@@ -73,8 +77,7 @@ terraform apply
 ```
 
 
-3. **Upload Assets:**
-Once the buckets are created, sync your dashboards:
+3. **Dashboards:** Terraform uploads both HTML files (`aws_s3_object`). To update one by hand:
 ```bash
 aws s3 cp enhanced-dashboard.html s3://global-shield-primary-[id]/index.html --content-type "text/html"
 aws s3 cp enhanced-failover-dashboard.html s3://global-shield-secondary-[id]/index.html --content-type "text/html"

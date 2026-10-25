@@ -1,0 +1,7 @@
+# Terraform: state holds real account IDs and ARNs, never commit it
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
