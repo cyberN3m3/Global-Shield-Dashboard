@@ -68,4 +68,4 @@ aws s3 cp enhanced-failover-dashboard.html s3://global-shield-secondary-<id>/ind
 
 ---
 
-Anyasi Chineme · [GitHub](https://github.com/cyberN3m3)
+Anyasi Chineme · [LinkedIn](https://www.linkedin.com/in/anyasichineme/) · [GitHub](https://github.com/cyberN3m3)
